@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "prompt",
+        "prompt": "A new session has started. Follow these steps in order:\n\n1. Read the user's project folder (check for daily-log.md to find the folder path — typically ~/cowork/Projects/adaptive-training-coach/ or equivalent).\n\n2. Check for user-profile.md in that folder:\n   - If it does not exist: this is a new user. Run /onboarding before anything else.\n   - If it exists but has sections marked [pending]: this is a returning user with an incomplete profile. Proceed to step 3, but weave in one pending Tier 2 question naturally during the session if an opening presents itself.\n   - If it exists and is reasonably complete: proceed to step 3.\n\n3. Run /morning-check-in: pull prior day's Whoop data (once per day only — check daily-log.md first), load training history, and deliver today's training recommendation."
+      }
+    ]
+  }
+}
