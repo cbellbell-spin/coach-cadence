@@ -1,4 +1,4 @@
-# Adaptive Training Coach
+# Coach Cadence
 
 A Cowork plugin for data-driven endurance and strength training. Integrates Whoop recovery data with structured cycling and strength programming to deliver daily recommendations and weekly planning.
 
