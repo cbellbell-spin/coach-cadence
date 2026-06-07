@@ -3,7 +3,7 @@
     "SessionStart": [
       {
         "type": "prompt",
-        "prompt": "A new session has started. Run /morning-check-in."
+        "prompt": "A new session has started. Run the morning-check-in skill."
       }
     ]
   }

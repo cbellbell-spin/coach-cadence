@@ -132,7 +132,18 @@ From the coaching decision you just made, populate these fields:
   hrvHigh: <HRV baseline high end>,
   cadenceFloor: 85,
   fuelCeiling: <GLP-1 ceiling from source-of-truth.md>,
-  weeklyHrMin: <weekly cycling minimum hours from source-of-truth.md>
+  weeklyHrMin: <weekly cycling minimum hours from source-of-truth.md>,
+  nextSession: {
+    date: '<date of next planned activity from current-block-plan.md>',
+    type: '<Session A — Lower Strength | Session B — Upper | ...>',
+    notes: '<constraints for that session>'
+  },
+  nextRide: {
+    date: '<date of next planned cycling session>',
+    type: '<session type>',
+    duration: '<target duration>',
+    notes: '<recovery constraint, fueling protocol>'
+  }
 }
 ```
 
@@ -177,6 +188,8 @@ window.CADENCE_DATA = {
   cadenceFloor: 85,
   fuelCeiling: ...,
   weeklyHrMin: ...,
+  nextSession: null,
+  nextRide: null,
   rideData: null,
   sessionFlags: [],
   progressions: []

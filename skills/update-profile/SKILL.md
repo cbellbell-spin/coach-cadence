@@ -1,6 +1,10 @@
 ---
 name: update-profile
-description: Update a specific section of the user profile. Use when the user volunteers new information or explicitly wants to correct something.
+description: >
+  Update a specific section of the user profile. Use when the user volunteers new
+  information or explicitly wants to correct something. Trigger phrases: "update my
+  profile", "change my profile", "correct my profile", "my schedule changed",
+  "update my availability".
 ---
 
 # /update-profile

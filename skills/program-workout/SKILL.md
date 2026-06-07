@@ -47,8 +47,10 @@ WHERE workout_type = '<workout_type>'
 ORDER BY date DESC, set_number ASC
 ```
 
-Replace `<workout_type>` with `Monday Lower Body` for Session A or
-`Friday Upper Body` for Session B.
+Replace `<workout_type>` with the correct value for each session:
+- Session A: `A (Lower Body)`
+- Session B: `B (Upper Body)`
+- Session C: `C (Lower Accessory)`
 
 ### Step 2 — Select exercise per slot
 
@@ -87,11 +89,21 @@ Use `execute_sql` with this query:
 
 ```
 INSERT INTO workout.programmed_workouts
-  (workout_type, status, coach_notes, programmed_at)
+  (status, coach_notes, programmed_at, scheduled_for, routine_type_id, user_id)
 VALUES
-  ('<workout_type>', 'pending', '<overall coach notes>', NOW())
+  ('pending', '<overall coach notes>', NOW(), '<scheduled_for_date>',
+   '<routine_type_id>', 'd11e8eea-7aab-4d6c-85ad-0079243bdbca')
 RETURNING id
 ```
+
+`scheduled_for` is the date the session is planned (YYYY-MM-DD).
+
+`routine_type_id` values:
+- Session A: `11111111-1111-1111-1111-111111111111`
+- Session B: `22222222-2222-2222-2222-222222222222`
+- Session C: `44444444-4444-4444-4444-444444444444`
+
+`user_id` is always `d11e8eea-7aab-4d6c-85ad-0079243bdbca`.
 
 Capture the returned `id` (UUID) — use it in step 2.
 

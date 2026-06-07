@@ -82,6 +82,8 @@ Write a fresh current-block-plan.md reflecting the upcoming week's structure and
 block's remaining trajectory. This is Mann's "draft" — the living plan Coach executes
 against session-to-session.
 
+Use this template:
+
 ```markdown
 # Current Block Plan
 Updated: [YYYY-MM-DD]
@@ -115,7 +117,29 @@ sciatica monitor, GLP-1 ceiling. One line each.]
 Overwrite the previous current-block-plan.md entirely — it reflects the current week,
 not a history. History is preserved in phase-trends.md and session-log.md.
 
-### Step 3: Determine if this is a block boundary
+### Step 3: Update the Cadence HUD
+
+Populate these four fields from the weekly assessment and the current-block-plan.md just written:
+
+- **D.coachingCall** — status from today's recovery data; `session` should always be `'REST'` on weekly review day
+- **D.nextSession** — the first planned activity of any type in the upcoming week (strength or cycling), whichever comes first
+- **D.nextRide** — the first planned cycling session in the upcoming week (may be later than nextSession if nextSession is a strength day)
+- **D.weekPlan** — the week schedule and goals from the new current-block-plan.md (full day-by-day table and constraints)
+
+**How to inject:**
+
+1. Call `mcp__cowork__list_artifacts`. If `cadence-hud` is not in the list, skip this step.
+2. Read the HTML file at the artifact path.
+3. Find the existing `window.CADENCE_DATA = {` block. Update the four fields above with the values you just determined. Leave all other fields (ftpWatts, eventDate, hrvLow, hrvHigh, fuelCeiling, etc.) unchanged.
+4. Write the modified HTML to the outputs directory as `cadence-hud-updated.html`.
+5. Call `mcp__cowork__update_artifact` with:
+   - `id = 'cadence-hud'`
+   - `html_path = '<path to cadence-hud-updated.html>'`
+   - `update_summary = 'Weekly review: <week classification>, next session <date>'`
+
+If the artifact update fails, note it in session-log.md and continue.
+
+### Step 4: Determine if this is a block boundary
 
 A block boundary has occurred when ANY of the following is true:
 - This is a Recovery week following a multi-week build
@@ -126,7 +150,7 @@ A block boundary has occurred when ANY of the following is true:
 
 If this is NOT a block boundary, stop here. No write to phase-trends.md.
 
-### Step 4: If block boundary - write to phase-trends.md
+### Step 5: If block boundary - write to phase-trends.md
 
 Compile the block's trajectory from session-log entries and weekly Strava/Whoop data,
 then write a new entry to phase-trends.md per the format in the `notes-manager` skill.
