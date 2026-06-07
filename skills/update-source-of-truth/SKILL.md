@@ -1,4 +1,5 @@
 ---
+name: update-source-of-truth
 description: Guided update of canonical training values — FTP, body weight, strength loads, monthly notes. Requires explicit confirmation before any write.
 ---
 

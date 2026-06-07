@@ -1,4 +1,5 @@
 ---
+name: onboarding
 description: Introduce the coach to a new user, build their profile through a structured interview, and write user-profile.md. Runs automatically on first session. Can be resumed in subsequent sessions.
 ---
 
