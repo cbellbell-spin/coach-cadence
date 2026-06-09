@@ -90,8 +90,49 @@ separate section - weave it into the coaching response.
    - Factor in cardiac decoupling flags from intervals.icu
    - Determine training phase and event countdown
    - Identify rationalization patterns to flag proactively
-9. Generate recommendation in the narrative voice defined in `daily-coaching` skill
-10. Write today's entry to session-log.md:
+9. **Reschedule Supabase programmed workout if coaching shifts the date**
+
+   Now that the session type is determined, check whether a pending programmed workout
+   of that type exists in Supabase but is scheduled for a different date within the next
+   3 days. If so, update `scheduled_for` to today before writing anything else — this
+   ensures Zone 4 of the Cadence HUD finds the right workout on first load.
+
+   Only run this check when today's coaching call is Session A, B, or C.
+
+   **Step 9a — Detect the mismatch**
+
+   ```sql
+   SELECT pw.id, pw.scheduled_for::text, wrt.name as workout_type
+   FROM workout.programmed_workouts pw
+   JOIN workout.workout_routine_types wrt ON pw.routine_type_id = wrt.id
+   WHERE pw.status = 'pending'
+     AND pw.scheduled_for BETWEEN CURRENT_DATE AND CURRENT_DATE + 3
+     AND wrt.name ILIKE '%<A|B|C>%'
+   ORDER BY pw.scheduled_for ASC
+   LIMIT 1;
+   ```
+
+   Use the session letter from the coaching call to fill `<A|B|C>`.
+
+   **Step 9b — If scheduled_for ≠ today, reschedule**
+
+   ```sql
+   UPDATE workout.programmed_workouts
+   SET scheduled_for = CURRENT_DATE,
+       updated_at    = now()
+   WHERE id = '<id from 9a>';
+   ```
+
+   **Step 9c — Log it**
+
+   Add to today's session-log entry:
+   `programmed_workout_rescheduled: <workout_type> moved from <original_date> to today`
+
+   If no mismatch exists, skip silently. If the update fails, log
+   `reschedule_failed: <error>` and continue — do not block step 10.
+
+10. Generate recommendation in the narrative voice defined in `daily-coaching` skill
+11. Write today's entry to session-log.md:
     - Full recommendation summary and key factors
     - Any Coach flags raised or carried forward in this session
     - Any session notes provided by the user (RPE, physical flags, personal context)
@@ -99,117 +140,70 @@ separate section - weave it into the coaching response.
 
 ## After delivering the coaching call
 
-### Update the Cadence HUD
+### Update the Cadence HUD — mandatory after every coaching call
 
-After writing to session-log.md, update (or create) the Cadence HUD artifact so Zone 2
-reflects today's coaching decision immediately — before the user opens the HUD.
+After writing to session-log.md, update the Cadence HUD. This is not optional.
 
-#### Step 1 — Check whether the artifact exists
+#### Step 1 — Confirm the artifact exists
 
-Call `mcp__cowork__list_artifacts`. Look for id `cadence-hud`.
+Call `mcp__cowork__list_artifacts`. If `cadence-hud` is not present, skip. If it exists, proceed — `list_artifacts` returns a `path` for each artifact.
 
-- **Exists** → proceed to Step 2 with `mcp__cowork__update_artifact`.
-- **Does not exist** → skip silently (artifact must be created separately).
+#### Step 2 — Read the current artifact HTML
 
-#### Step 2 — Build the CADENCE_DATA patch
+Read the HTML file at the `path` returned by `list_artifacts`.
 
-From the coaching decision you just made, populate these fields:
+#### Step 3 — Build the injection block
+
+Find the existing injection block — everything from the first line matching `// ─── .* injection .* ───` through `// ─── end injection ───` inclusive. Replace it entirely with the following (substitute real values):
 
 ```javascript
-{
-  coachingCall: {
-    status: '<green|yellow|red>',
-    session: '<Session A|Session B|Session C|Long Ride|Z2 Ride|Rest>',
-    directive: '<Strength only|Z2 target — Xh|Complete rest|Intensity allowed>',
-    duration: '<45–50 min|3h|—>',
-    note: '<one sentence: the single most important behavioral constraint today>'
-  },
-  sessionPhase: 'pre',
-  sessionMode: '<strength|cycling|rest>',
-  eventDate: '<YYYY-MM-DD from source-of-truth.md>',
-  ftpWatts: <number from source-of-truth.md>,
-  hrvLow: <HRV baseline low end>,
-  hrvHigh: <HRV baseline high end>,
-  cadenceFloor: 85,
-  fuelCeiling: <GLP-1 ceiling from source-of-truth.md>,
-  weeklyHrMin: <weekly cycling minimum hours from source-of-truth.md>,
-  nextSession: {
-    date: '<date of next planned activity from current-block-plan.md>',
-    type: '<Session A — Lower Strength | Session B — Upper | ...>',
-    notes: '<constraints for that session>'
-  },
-  nextRide: {
-    date: '<date of next planned cycling session>',
-    type: '<session type>',
-    duration: '<target duration>',
-    notes: '<recovery constraint, fueling protocol>'
-  }
-}
-```
-
-**sessionMode mapping:**
-- Session A / B / C → `'strength'`
-- Long Ride / Z2 Ride / Intensity ride → `'cycling'`
-- Rest / Recovery only → `'rest'`
-
-**coachingCall.note** — one sentence max. The single behavioral constraint.
-Examples:
-- `'Yellow blocks all intensity — strength only today.'`
-- `'Red recovery — no training, full rest.'`
-- `'Green but 48h buffer from Session A — Z2 only, no intensity.'`
-- `'Green, all systems clear — session as programmed.'`
-
-#### Step 3 — Read the current artifact HTML
-
-Call `mcp__cowork__list_artifacts` to get the artifact path. Read the HTML file at that path.
-
-#### Step 4 — Inject CADENCE_DATA and write updated artifact
-
-In the HTML file, find the comment line:
-```
-// ═══════════════════════════════════════════════════════
-//  CADENCE_DATA — written by skills via update_artifact
-```
-
-Immediately before that block (before `window.CADENCE_DATA = window.CADENCE_DATA || {};`),
-insert a new `<script>` block that pre-populates CADENCE_DATA:
-
-```html
-<script>
-// Written by morning-check-in — YYYY-MM-DD
-window.CADENCE_DATA = {
-  coachingCall: { status: '...', session: '...', directive: '...', duration: '...', note: '...' },
-  sessionPhase: 'pre',
-  sessionMode: '...',
-  eventDate: '...',
-  ftpWatts: ...,
-  hrvLow: ...,
-  hrvHigh: ...,
-  cadenceFloor: 85,
-  fuelCeiling: ...,
-  weeklyHrMin: ...,
-  nextSession: null,
-  nextRide: null,
-  rideData: null,
-  sessionFlags: [],
-  progressions: []
+// ─── morning-check-in injection YYYY-MM-DD ───
+D.coachingCall = {
+  status: '<green|yellow|red>',
+  session: '<Session A|Session B|Session C|Long Ride|Z2 Ride|Rest>',
+  directive: '<one phrase: what to do>',
+  note: '<one sentence: the single most important behavioral constraint today>'
 };
-</script>
+D.sessionPhase = 'pre';
+D.sessionMode  = <'strength'|'cycling'|'rest'|null>;
+D.rideData     = null;
+D.sessionFlags = [];
+D.progressions = [];
+D.nextRide = {
+  date: '<YYYY-MM-DD>',
+  type: '<ride type>',
+  duration: '<target duration>',
+  notes: '<recovery constraint · fueling protocol>'
+};
+D.nextSession = {
+  date: '<YYYY-MM-DD>',
+  type: '<Session A/B/C — Label>',
+  notes: '<key loads for that session>'
+};
+D.weekPlan = {
+  weekOf: '<YYYY-MM-DD of this Monday>',
+  goals: ['<taper/block goal 1>', '<goal 2>', '<goal 3>'],
+  schedule: {
+    '<YYYY-MM-DD>': { type: 'strength|cycling|rest', label: '<A|B|C|Z2|REST>', note: '<...>' }
+    // one entry per day Mon–Sun
+  },
+  actuals: {
+    '<YYYY-MM-DD>': { completed: false, type: 'strength|cycling|rest' }
+    // completed:true only for days with a confirmed session; today is always false
+  }
+};
+// ─── end injection ───
 ```
 
-Write the modified HTML to the outputs directory (e.g. `cadence-hud-updated.html`), then call:
+**sessionMode mapping:** Session A/B/C → `'strength'` · any ride → `'cycling'` · rest → `'rest'` · pre-session → `null`
 
-```
-mcp__cowork__update_artifact(
-  id = 'cadence-hud',
-  html_path = '<path to cadence-hud-updated.html>',
-  update_summary = 'Morning check-in: <one-line coaching summary>'
-)
-```
+**weekPlan source:** read from `current-block-plan.md`. If that file doesn't exist, derive the week schedule from the coaching call and source-of-truth.md constraints.
 
-#### If artifact update fails
+**nextSession vs nextRide:** populate both. `nextSession` is the next strength session; `nextRide` is the next cycling session. Both dates come from current-block-plan.md.
 
-Log `hud_update: failed` in today's session-log entry. Do not block the rest of the session.
+#### Step 4 — Write and push
+
+Write the modified HTML to the outputs directory as `cadence-hud-updated.html`, then call:
 
 ### Prompt session close
 

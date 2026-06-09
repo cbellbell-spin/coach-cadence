@@ -25,7 +25,42 @@ boundary, and if so, writes to phase-trends.md.
    - `whoop_get_strain_range` (last 7 days)
    - `whoop_get_training_summary`
 6. Pull Strava activities (last 7 days)
-7. Ask Chris for any context not captured in data: upcoming constraints (travel, work stress),
+7. Pull programmed vs actual comparison from Supabase
+
+Query all programmed workouts scheduled for the past 7 days, plus any that were rescheduled
+into the week (use the `programmed_workout_rescheduled` notes in session-log.md to identify
+these):
+
+```sql
+SELECT pw.id,
+       pw.scheduled_for::text,
+       pw.status,
+       wrt.name as workout_type,
+       ws.date::text as logged_date,
+       ws.id as session_id
+FROM workout.programmed_workouts pw
+JOIN workout.workout_routine_types wrt ON pw.routine_type_id = wrt.id
+LEFT JOIN workout.workout_sessions ws
+  ON ws.deleted_at IS NULL
+  AND ABS(ws.date - pw.scheduled_for) <= 3          -- fuzzy match: ±3 days
+  AND ws.workout_type ILIKE '%' || LEFT(wrt.name, 7) || '%'  -- match on type prefix
+WHERE pw.scheduled_for BETWEEN
+  date_trunc('week', CURRENT_DATE - 7) AND CURRENT_DATE
+ORDER BY pw.scheduled_for;
+```
+
+Classify each programmed workout as one of:
+- **Executed on schedule** — `logged_date = scheduled_for`
+- **Executed with date shift** — `logged_date IS NOT NULL AND logged_date ≠ scheduled_for`
+  (note: "Session A executed [logged_date], programmed for [scheduled_for] — coach-directed shift")
+- **Not executed** — `logged_date IS NULL` and `status = 'pending'`
+  (flag: "Session A programmed for [date] — not logged. Skipped or not yet recorded?")
+- **Completed in Supabase** — `status = 'completed'` regardless of date match
+
+Also check session-log.md for `programmed_workout_rescheduled:` notes from this week —
+use these to distinguish a coach-directed date shift from a genuine skip.
+
+8. Ask Chris for any context not captured in data: upcoming constraints (travel, work stress),
    any pain or niggles, Healthspan Age if visible in WHOOP app, how legs felt late in longer
    rides
 
@@ -37,7 +72,9 @@ Event countdown: [X days to May 3]
 
 **Last week (facts from Strava + Whoop):**
 - Riding: X hrs | X rides | X intensity sessions
-- Strength: X/2 sessions
+- Strength: X/3 sessions | [list which: A ✓ / B ✓ / C –]
+  [note any date shifts: "Session A executed Mon, programmed for Tue — coach-directed shift"]
+  [note any gaps: "Session C not logged — skipped or unrecorded?"]
 - Longest ride: X hrs
 - WHOOP recovery trend: [mostly green / mixed / mostly yellow-red]
 - Avg HRV: Xms | Avg RHR: X bpm | Avg sleep: Xh
@@ -102,6 +139,17 @@ Updated: [YYYY-MM-DD]
 |-----|---------|--------|-------------|
 | [Mon] | [Session A] | [45 min] | [48h buffer before next ride] |
 | ... | ... | ... | ... |
+
+## Last week's execution
+| Programmed | Scheduled | Executed | Notes |
+|------------|-----------|----------|-------|
+| Session A  | Mon Jun 8 | Mon Jun 8 | On schedule |
+| Session B  | Tue Jun 9 | — | Not logged |
+| Z2 Ride    | Wed Jun 10 | — | Pending |
+
+This table is written by the weekly review and read by morning-check-in as historical context.
+If a session shows "Not logged" but session-log has a `programmed_workout_rescheduled` note,
+override to "Coach shift — [date]" rather than treating it as a gap.
 
 ## Active constraints
 [List any constraints in effect this week: 48h buffer, decoupling watch, HRV tripwire,

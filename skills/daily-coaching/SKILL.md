@@ -114,3 +114,17 @@ close with:
 "Run `/session-close` when done to log this call."
 
 Skip this prompt for routine calls where the reasoning is obvious from the data alone.
+
+## Update the Cadence HUD — mandatory after every coaching call
+
+When daily-coaching is invoked standalone (not via morning-check-in), the HUD must be updated before the session ends.
+
+Call `mcp__cowork__list_artifacts`. If `cadence-hud` exists:
+1. Read the HTML at the returned `path`
+2. Find the existing injection block (`// ─── .* injection .* ───` through `// ─── end injection ───`) and replace it using the injection format and field spec defined in the morning-check-in skill
+3. Write the updated HTML to outputs as `cadence-hud-updated.html`
+4. Call `mcp__cowork__update_artifact(id='cadence-hud', html_path=..., update_summary='Daily coaching YYYY-MM-DD: <status> — <session>')`
+
+If morning-check-in is already running in this session, it owns the HUD update — do not duplicate it.
+
+If the update fails, log `hud_update: failed` in today's session-log entry and continue.
