@@ -7,10 +7,11 @@ A Cowork plugin for data-driven endurance and strength training. Integrates Whoo
 ## What it does
 
 - Runs a morning check-in automatically at session start — pulls Whoop, checks training history, delivers one decisive recommendation
-- Tracks a 7-day rolling daily log and 6-week rolling weekly summary
+- Tracks a rolling session log and block-level trajectory
 - Enforces training rules: 48-hour buffer, yellow = no intensity, strength non-negotiable
 - Flags rationalization patterns before they become bad decisions
 - Manages a canonical Source of Truth file for training state
+- Updates a Cadence HUD artifact with each coaching decision
 
 ---
 
@@ -46,23 +47,37 @@ Ensure your Whoop OAuth app has `read:workout` scope enabled in addition to reco
 
 ## Commands
 
+All commands are thin entry points that load the corresponding skill. The skill owns the workflow; the command just routes.
+
 | Command | What it does |
 |---------|-------------|
 | `/morning-check-in` | Daily Whoop pull + recommendation (also runs automatically at session start) |
-| `/weekly-review` | 6-week rollup, week classification, upcoming week plan |
-| `/log-workout` | Manual log for sessions or qualitative notes |
+| `/weekly-review` | Week rollup, classification, upcoming week plan |
+| `/log-workout` | Manual log for strength sessions or qualitative notes |
+| `/onboarding` | First-session profile interview (new users) |
+| `/update-profile` | Mid-session profile updates |
 | `/update-source-of-truth` | Guided update of FTP, weight, strength loads, event info |
 
 ---
 
-## Notes files
+## Memory files
 
-The plugin writes to two rolling files in your project folder:
+The plugin reads and writes the following files in your project folder. Files are created on first use.
 
-- `daily-log.md` — last 7 days, created automatically
-- `weekly-summary.md` — last 6 weeks, created automatically
+**Live (canonical state):**
+- `source-of-truth.md` — FTP, weight, strength loads, event info. Updated only via `/update-source-of-truth`.
+- `user-profile.md` — onboarding profile (goals, schedule, health context). Updated via `/onboarding` and `/update-profile`.
 
-Do not edit these manually while the plugin is active — they're written by the plugin after each check-in.
+**Three-tier memory** (managed by the `notes-manager` skill):
+- `session-log.md` — rolling coaching context. Last 7 days, kept compact: recommendations, key factors, qualitative notes, Coach flags. No raw Whoop/Strava data.
+- `phase-trends.md` — block-level trajectory. Written at meaningful training boundaries (rest week, event completion, fitness test), not on a calendar schedule.
+- `permanent-record.md` — append-only. DEXA, FTP history, events, injuries, strength progression.
+
+**Mann-pattern artifacts** (driven by `weekly-review`):
+- `current-block-plan.md` — the living plan for the current week. Overwritten each weekly review.
+- `coaching-decisions.md` — coaching rationale. Written by `/session-close` after confirmed calls. Pruned at 6 weeks.
+
+Do not edit `session-log.md`, `phase-trends.md`, or `coaching-decisions.md` manually while the plugin is active — they're written by the plugin.
 
 ---
 
@@ -72,7 +87,7 @@ Strava integration is planned but not yet implemented. When built, it will provi
 - Recent activities (last 7 days)
 - Basic stats (duration, distance, elevation)
 
-Until then, the plugin will note when Strava data is unavailable and rely on daily-log.md for activity context.
+Until then, the plugin will note when Strava data is unavailable and rely on `session-log.md` for activity context.
 
 ---
 
