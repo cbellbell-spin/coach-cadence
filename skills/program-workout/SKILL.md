@@ -148,42 +148,15 @@ It's loaded in the app — you'll see it when you start the session."
 
 ---
 
-## Cadence HUD — refresh Zone 6 after programming
+## Update the Cadence HUD
 
-After writing the programmed workout to Supabase and confirming to Chris, refresh the Cadence
-HUD so Zone 6 shows the newly programmed session immediately.
+After writing to Supabase, update the Cadence HUD per the standard protocol in `notes-manager`.
 
-### Step 1 — Check whether the artifact exists
+Zone 6 fetches live from Supabase on reload — no data injection is needed. To trigger an
+immediate reload of Zone 6, read the artifact HTML (get path from `list_artifacts`), write
+it unchanged to a temp file, then call `update_artifact`:
 
-Call `mcp__cowork__list_artifacts`. If `cadence-hud` is not present, skip.
+**update_summary:** `'Zone 6 refresh: <Session type> programmed for <date>'`
 
-### Step 2 — Clear the Zone 6 cache key in the artifact
-
-Zone 6 caches results under `cadence_cache_next_{today}` in localStorage. The artifact will
-auto-refresh Zone 6 on its next reload — no additional data injection is needed for Zone 6
-since it fetches live from Supabase.
-
-However, if the artifact is currently open, it will show stale data until the user reloads.
-To trigger an immediate refresh, read the artifact HTML, find the `boot()` call at the bottom,
-and do not change it — just call `update_artifact` with a trivial update_summary so the
-artifact reloads in the user's view.
-
-### Step 3 — Call update_artifact
-
-Read the current artifact HTML (get path from `list_artifacts`). Write it to a temp file
-unchanged (or with the date comment updated), then call:
-
-```
-mcp__cowork__update_artifact(
-  id = 'cadence-hud',
-  html_path = '<path to temp file>',
-  update_summary = 'Zone 6 refresh: <Session type> programmed for <date>'
-)
-```
-
-The artifact's `loadZ6()` function will fetch the new programmed workout from Supabase on
-reload.
-
-### If artifact update fails
-
-Proceed normally. Zone 6 will update on the next manual artifact reload.
+If the artifact update fails, Zone 6 will update on the next manual artifact reload. Do not
+block the rest of the session.

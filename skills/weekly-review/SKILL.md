@@ -167,23 +167,17 @@ not a history. History is preserved in phase-trends.md and session-log.md.
 
 ### Step 3: Update the Cadence HUD
 
-Populate these four fields from the weekly assessment and the current-block-plan.md just written:
+Update the Cadence HUD per the standard protocol in `notes-manager`. Update these four
+fields from the weekly assessment and current-block-plan.md just written:
 
 - **D.coachingCall** — status from today's recovery data; `session` should always be `'REST'` on weekly review day
 - **D.nextSession** — the first planned activity of any type in the upcoming week (strength or cycling), whichever comes first
 - **D.nextRide** — the first planned cycling session in the upcoming week (may be later than nextSession if nextSession is a strength day)
 - **D.weekPlan** — the week schedule and goals from the new current-block-plan.md (full day-by-day table and constraints)
 
-**How to inject:**
+Leave all other fields (ftpWatts, eventDate, hrvLow, hrvHigh, fuelCeiling, etc.) unchanged.
 
-1. Call `mcp__cowork__list_artifacts`. If `cadence-hud` is not in the list, skip this step.
-2. Read the HTML file at the artifact path.
-3. Find the existing `window.CADENCE_DATA = {` block. Update the four fields above with the values you just determined. Leave all other fields (ftpWatts, eventDate, hrvLow, hrvHigh, fuelCeiling, etc.) unchanged.
-4. Write the modified HTML to the outputs directory as `cadence-hud-updated.html`.
-5. Call `mcp__cowork__update_artifact` with:
-   - `id = 'cadence-hud'`
-   - `html_path = '<path to cadence-hud-updated.html>'`
-   - `update_summary = 'Weekly review: <week classification>, next session <date>'`
+**update_summary:** `'Weekly review: <week classification>, next session <date>'`
 
 If the artifact update fails, note it in session-log.md and continue.
 

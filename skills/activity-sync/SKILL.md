@@ -104,10 +104,10 @@ Read this before any Strava API call. Update it immediately after every pull.
 
 ---
 
-## Cadence HUD — update after intervals.icu enrichment
+## Update the Cadence HUD
 
-After enriching an outdoor ride with intervals.icu data, update the Cadence HUD artifact
-to switch it to cycling mode and populate Zones 4 and 5 with the ride data.
+After enriching an outdoor ride with intervals.icu data, update the Cadence HUD per the
+standard protocol in `notes-manager`. Provide this data:
 
 ### Step 1 — Compute session flags
 
@@ -171,14 +171,9 @@ Only include flags where the condition is met. Empty array is valid.
 }
 ```
 
-### Step 3 — Check whether the artifact exists
+### Step 3 — Inject
 
-Call `mcp__cowork__list_artifacts`. If `cadence-hud` is not present, skip.
-
-### Step 4 — Read current artifact HTML and inject updates
-
-Read the artifact HTML. Find the `window.CADENCE_DATA = {` block written by morning-check-in.
-Update these fields:
+Fields to update in the injection block:
 
 ```javascript
 sessionMode: 'cycling',
@@ -189,20 +184,4 @@ sessionFlags: [ /* flags array from Step 1 */ ]
 
 Do not change coachingCall, eventDate, ftpWatts, or other constants.
 
-Write the modified HTML to the outputs directory (`cadence-hud-updated.html`), then call:
-
-```
-mcp__cowork__update_artifact(
-  id = 'cadence-hud',
-  html_path = '<path>',
-  update_summary = 'Ride synced: <distance>mi, <duration>, DC <X.X%>'
-)
-```
-
-The artifact will:
-- Zone 4 → switch to cycling mode, show ride stats panel
-- Zone 5 → show session flags (or empty if none)
-
-### If artifact update fails
-
-Log `hud_update: failed` in today's session-log entry. Do not block the rest of the session.
+**update_summary:** `'Ride synced: <distance>mi, <duration>, DC <X.X%>'`

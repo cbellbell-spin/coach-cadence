@@ -5,6 +5,29 @@
         "type": "prompt",
         "prompt": "A new session has started. Run the morning-check-in skill."
       }
+    ],
+    "Stop": [
+      {
+        "type": "prompt",
+        "prompt": "End-of-session checklist — work through each item before your final response:\n\n1. SESSION LOG: Has today's session-log.md entry been written or updated with the recommendation, Coach flags, and session notes? If not, write it now.\n\n2. CADENCE HUD: If coaching was delivered, a workout was logged, or an activity was synced this session — has the Cadence HUD artifact been updated? If not, update it now per the standard protocol in notes-manager.\n\n3. SESSION CLOSE: Were any non-obvious coaching calls made this session (conservative override, pattern interpretation, constraint applied despite good recovery, rationalization flagged)? If yes, close with: 'Run /session-close to log this coaching call.'"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "whoop_get_latest_recovery|whoop_get_latest_sleep|whoop_get_latest_strain|whoop_get_strain_range|whoop_get_training_summary|whoop_get_recovery_range|whoop_get_sleep_range|whoop_get_workouts",
+        "type": "prompt",
+        "prompt": "Before calling this Whoop tool: read today's entry in session-log.md. If whoop_pulled is 'yes', do NOT proceed — use cached context instead and skip this call. Only proceed if whoop_pulled is 'no' or the field is absent from today's entry."
+      },
+      {
+        "matcher": "get-recent-activities|get-all-activities|get-activity-details",
+        "type": "prompt",
+        "prompt": "Before calling this Strava tool: check strava_last_pull in today's session-log.md. If it was pulled within the last 4 hours AND the user has not reported completing an activity since then, skip this call and use session log context instead."
+      },
+      {
+        "matcher": "Write|Edit",
+        "type": "prompt",
+        "prompt": "If the target file is source-of-truth.md: stop immediately. This file is only updated via the update-source-of-truth skill. Direct Chris to run that skill instead of writing directly."
+      }
     ]
   }
 }

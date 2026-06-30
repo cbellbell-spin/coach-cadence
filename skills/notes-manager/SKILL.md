@@ -214,7 +214,7 @@ artifact-driven pattern — the document the coach and athlete are executing aga
 
 ### Read rules
 
-- Read at every morning-check-in (steps 5)
+- Read at every morning-check-in (step 5)
 - Read at weekly-review before delivering the assessment (step 4)
 
 ### Write rules
@@ -271,6 +271,47 @@ Prepend new entries at the top.
 
 ---
 
+## Cadence HUD — Standard Update Protocol
+
+Every skill that delivers coaching, logs a workout, or syncs an activity must update the
+Cadence HUD. This is the shared procedure. The Stop hook enforces that it runs; each skill
+provides only the data to inject (see that skill's HUD section for the specific fields).
+
+### Step 1 — Confirm the artifact exists
+
+Call `mcp__cowork__list_artifacts`. If `cadence-hud` is not present, skip entirely. If it
+exists, the response includes a `path` for the artifact HTML file.
+
+### Step 2 — Read the current artifact HTML
+
+Read the HTML file at the `path` returned by `list_artifacts`.
+
+### Step 3 — Inject the skill-provided data
+
+Find the existing injection block — everything from the first line matching
+`// ─── .* injection .* ───` through `// ─── end injection ───` inclusive. Replace it
+with the block specified by the calling skill, substituting real values.
+
+### Step 4 — Write the updated file
+
+Write the modified HTML to the outputs directory as `cadence-hud-updated.html`.
+
+### Step 5 — Push to the artifact
+
+```
+mcp__cowork__update_artifact(
+  id = 'cadence-hud',
+  html_path = '<path to cadence-hud-updated.html>',
+  update_summary = '<skill-provided summary string>'
+)
+```
+
+### If the update fails
+
+Log `hud_update: failed` in today's session-log entry. Do not block the rest of the session.
+
+---
+
 ## Write rules (all files)
 
 - Always read the file before writing - never overwrite without intent. Tier 1 and 2: prepend.
@@ -285,9 +326,8 @@ Prepend new entries at the top.
 ## Read rules
 
 - Always load session-log.md before generating a daily recommendation
-- Check whoop_pulled before any Whoop API call - skip if already pulled today
-- Check strava_last_pull before any Strava API call - skip if pulled within last 4 hours
-  unless user reports a completed activity
+- Check whoop_pulled before any Whoop API call — skip if already pulled today (PreToolCall hook enforces this)
+- Check strava_last_pull before any Strava API call — skip if pulled within last 4 hours unless user reports a completed activity (PreToolCall hook enforces this)
 - Load phase-trends.md at weekly review and when a pattern may be crossing to a trend
 - Load permanent-record.md when training history depth is relevant
 - Read current-block-plan.md at every morning-check-in and weekly review

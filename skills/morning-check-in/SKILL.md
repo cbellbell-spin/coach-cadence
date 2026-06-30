@@ -140,21 +140,10 @@ separate section - weave it into the coaching response.
 
 ## After delivering the coaching call
 
-### Update the Cadence HUD — mandatory after every coaching call
+### Update the Cadence HUD
 
-After writing to session-log.md, update the Cadence HUD. This is not optional.
-
-#### Step 1 — Confirm the artifact exists
-
-Call `mcp__cowork__list_artifacts`. If `cadence-hud` is not present, skip. If it exists, proceed — `list_artifacts` returns a `path` for each artifact.
-
-#### Step 2 — Read the current artifact HTML
-
-Read the HTML file at the `path` returned by `list_artifacts`.
-
-#### Step 3 — Build the injection block
-
-Find the existing injection block — everything from the first line matching `// ─── .* injection .* ───` through `// ─── end injection ───` inclusive. Replace it entirely with the following (substitute real values):
+After writing to session-log.md, update the Cadence HUD per the standard protocol in
+`notes-manager`. Provide this injection block (substitute real values):
 
 ```javascript
 // ─── morning-check-in injection YYYY-MM-DD ───
@@ -201,18 +190,7 @@ D.weekPlan = {
 
 **nextSession vs nextRide:** populate both. `nextSession` is the next strength session; `nextRide` is the next cycling session. Both dates come from current-block-plan.md.
 
-#### Step 4 — Write and push
-
-Write the modified HTML to the outputs directory as `cadence-hud-updated.html`, then call:
-
-### Prompt session close
-
-After completing all of the above, close with:
-
-"Run `/session-close` when your session is done to log this coaching call."
-
-Only prompt this when the coaching decision involved non-obvious reasoning (override,
-pattern interpretation, constraint applied). Skip the prompt for routine calls.
+**update_summary:** `'Morning check-in YYYY-MM-DD: <status> — <session>'`
 
 ## If Whoop pull fails
 

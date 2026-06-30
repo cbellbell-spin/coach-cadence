@@ -105,26 +105,12 @@ When strength sessions are incomplete for the week — flag this explicitly even
 - Do not generate a training recommendation until the user states the next goal
 - Prompt: "Event prep is complete. What are we training for next?"
 
-## After delivering the recommendation
+## Update the Cadence HUD
 
-If the coaching call involved non-obvious reasoning — a conservative override, a pattern
-interpretation, a constraint applied despite good recovery, or a rationalization flagged —
-close with:
-
-"Run `/session-close` when done to log this call."
-
-Skip this prompt for routine calls where the reasoning is obvious from the data alone.
-
-## Update the Cadence HUD — mandatory after every coaching call
-
-When daily-coaching is invoked standalone (not via morning-check-in), the HUD must be updated before the session ends.
-
-Call `mcp__cowork__list_artifacts`. If `cadence-hud` exists:
-1. Read the HTML at the returned `path`
-2. Find the existing injection block (`// ─── .* injection .* ───` through `// ─── end injection ───`) and replace it using the injection format and field spec defined in the morning-check-in skill
-3. Write the updated HTML to outputs as `cadence-hud-updated.html`
-4. Call `mcp__cowork__update_artifact(id='cadence-hud', html_path=..., update_summary='Daily coaching YYYY-MM-DD: <status> — <session>')`
+When daily-coaching is invoked standalone (not via morning-check-in), update the Cadence HUD
+per the standard protocol in `notes-manager`. Use the same injection block format defined in
+morning-check-in, populated from today's coaching call.
 
 If morning-check-in is already running in this session, it owns the HUD update — do not duplicate it.
 
-If the update fails, log `hud_update: failed` in today's session-log entry and continue.
+**update_summary:** `'Daily coaching YYYY-MM-DD: <status> — <session>'`

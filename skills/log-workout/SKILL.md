@@ -61,62 +61,23 @@ No commentary on the quality of the session unless Chris asks. Log the facts.
 
 ---
 
-## Cadence HUD — update after logging the session
+## Update the Cadence HUD
 
 After writing the session log entry and confirming any progressions, update the Cadence HUD
-artifact to switch Zone 4 to comparison view and Zone 5 to the confirmed progressions.
-
-### Step 1 — Collect progressions
-
-A progression occurs when a logged load is higher than the previous working load in
-source-of-truth.md for that exercise. Ask if not already confirmed:
-"Were any loads progressed today vs last session?"
-
-For each progression, collect:
-```javascript
-{ exercise: 'Step-ups', from: '50 lbs', to: '55 lbs', rule: '2-week rule met' }
-```
-
-Common rule strings: `'2-week rule met'`, `'3 clean sets unlocked'`, `'Rep ceiling hit'`.
-
-### Step 2 — Check whether the artifact exists
-
-Call `mcp__cowork__list_artifacts`. If `cadence-hud` is not present, skip.
-
-### Step 3 — Read current artifact HTML and inject updates
-
-Read the artifact HTML. Find the `window.CADENCE_DATA = {` block (the one written by
-morning-check-in). Update these fields:
+per the standard protocol in `notes-manager`. Inject these fields:
 
 ```javascript
 sessionPhase: 'complete',
 progressions: [
-  { exercise: '...', from: '...', to: '...', rule: '...' },
+  { exercise: '<name>', from: '<old>', to: '<new>', rule: '<rule string>' },
   // one entry per exercise progressed; empty array if none
 ]
 ```
 
-Do not change any other CADENCE_DATA fields.
+Common rule strings: `'2-week rule met'`, `'3 clean sets unlocked'`, `'Rep ceiling hit'`.
 
-Write the modified HTML to the outputs directory (`cadence-hud-updated.html`), then call:
+A progression occurs when a logged load is higher than the previous working load in
+source-of-truth.md. If no progressions, pass `progressions: []` — Zone 5 will show
+"— no progressions this session —".
 
-```
-mcp__cowork__update_artifact(
-  id = 'cadence-hud',
-  html_path = '<path>',
-  update_summary = 'Session complete: <N progressions or "no progressions">'
-)
-```
-
-The artifact will:
-- Zone 4 → switch to programmed vs actual comparison view (loads from Supabase)
-- Zone 5 → display the progressions array (or "no progressions this session")
-
-### If no progressions this session
-
-Still update the artifact with `sessionPhase: 'complete'` and `progressions: []`.
-Zone 5 will show "— no progressions this session —".
-
-### If artifact update fails
-
-Log `hud_update: failed` in today's session-log entry. Do not block the rest of the session.
+**update_summary:** `'Session complete: <N progressions or "no progressions">'`
