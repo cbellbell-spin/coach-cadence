@@ -14,6 +14,10 @@ A Cowork plugin for data-driven endurance and strength training. Integrates Whoo
 
 ---
 
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how Cadence connects to Whoop, Strava,
+intervals.icu, and local storage — including which integrations are actually wired in versus
+still placeholder.
+
 ## First-time setup
 
 ### 1. Create your project folder
