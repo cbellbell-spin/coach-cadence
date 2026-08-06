@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "prompt",
+        "prompt": "A new session has started. Run /morning-check-in."
+      }
+    ]
+  }
+}
