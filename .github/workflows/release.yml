@@ -1,0 +1,54 @@
+name: Release Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Validators live in cowork-plugin-tooling so every plugin repo checks the
+      # same rules. Public repo, so the default token can check it out.
+      - name: Fetch shared tooling
+        uses: actions/checkout@v4
+        with:
+          repository: cbellbell-spin/cowork-plugin-tooling
+          path: .tooling
+
+      - name: Check tag matches plugin.json version
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          MANIFEST_VERSION=$(python3 -c "import json;print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "ERROR: tag v$TAG_VERSION does not match plugin.json version $MANIFEST_VERSION"
+            exit 1
+          fi
+          echo "Version check passed: $MANIFEST_VERSION"
+
+      # Dev symlinks into ~/projects/shared/ don't resolve on a runner. zip skips
+      # dangling links silently, so without this the release ships incomplete.
+      # build-plugin.sh also hard-fails on any dangling link as a backstop.
+      - name: Inline shared references
+        run: .tooling/sync-shared-refs.sh "$GITHUB_WORKSPACE/.."
+
+      - name: Build plugin zip
+        run: .tooling/build-plugin.sh
+
+      - name: Validate
+        run: |
+          ZIP=$(ls -t *.zip | head -1)
+          echo "Validating $ZIP"
+          python3 .tooling/validate-cowork-plugin.py "$ZIP"
+          python3 .tooling/test_plugin.py "$ZIP"
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.zip'
+          generate_release_notes: true
