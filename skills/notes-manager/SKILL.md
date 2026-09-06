@@ -19,10 +19,17 @@ only what those APIs cannot retrieve.
 
 ## Workspace files
 
-All files live in this athlete's `training/` folder in the shared workspace.
-Resolve its location using the procedure in the plugin's `references/WORKSPACE.md`
-before reading or writing — never assume a local filesystem path, since Cowork web
-and mobile have no filesystem.
+All files live in this athlete's `training/` folder.
+
+Use the folder this session is connected to — that always wins. If no folder was
+given, resolve one using the procedure in the plugin's `references/WORKSPACE.md`,
+which also lists the Drive fallback for sessions with no filesystem access.
+
+Cadence is expected to run away from the desktop, and a cloud session loses local
+file access the moment the Mac sleeps. The connected folder should therefore be
+the Drive-mirrored workspace copy, so the bridged path and the connector path are
+the same files. If you are ever handed a training folder *outside* that mirror,
+say so before writing — that is how the same log ends up forked in two places.
 
 ```
 session-log.md         <- Tier 1: rolling session context
