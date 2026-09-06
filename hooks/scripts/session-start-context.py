@@ -8,7 +8,7 @@ prompt-type hooks (per https://code.claude.com/docs/en/hooks: "SessionStart
 and Setup support command and mcp_tool hooks. They don't support http,
 prompt, or agent hooks."), so the original was an invalid combination and is
 rejected by the Cowork install approval UI. Mirrors the equivalent script in
-kate-career-coach and coach-cadence.
+kate-career-coach.
 
 The guard matters because this is installed as a personal (cross-project)
 plugin: "the plugin is enabled" and "this is a training session" are not the
