@@ -14,7 +14,7 @@ This skill loads the complete coaching framework for Chris Bell's training syste
 
 ## How to load context
 
-1. Read `~/cowork/Projects/adaptive-training-coach/source-of-truth.md` — always. This is the live canonical file. If it does not exist, read `references/source-of-truth.md` from this skill and prompt Chris to save it to the project folder.
+1. Read `source-of-truth.md` — always. This is the live canonical file. If it does not exist, read `references/source-of-truth.md` from this skill and prompt Chris to save it to the project folder.
 
 Load the following reference files only when the session context requires them:
 

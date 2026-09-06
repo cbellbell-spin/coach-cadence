@@ -17,18 +17,21 @@ that must survive across all training blocks.
 **Core principle:** Whoop and Strava are live data sources. Pull them fresh. This system stores
 only what those APIs cannot retrieve.
 
-## Cowork Project folder
+## Workspace files
 
-All files live in the Cowork Project folder for this athlete:
+All files live in this athlete's `training/` folder in the shared workspace.
+Resolve its location using the procedure in the plugin's `references/WORKSPACE.md`
+before reading or writing — never assume a local filesystem path, since Cowork web
+and mobile have no filesystem.
 
 ```
-~/cowork/Projects/adaptive-training-coach/session-log.md         <- Tier 1: rolling session context
-~/cowork/Projects/adaptive-training-coach/phase-trends.md        <- Tier 2: block-level trajectory
-~/cowork/Projects/adaptive-training-coach/permanent-record.md    <- Tier 3: permanent history
-~/cowork/Projects/adaptive-training-coach/user-profile.md        <- brief (onboarding profile)
-~/cowork/Projects/adaptive-training-coach/source-of-truth.md     <- canonical training values
-~/cowork/Projects/adaptive-training-coach/current-block-plan.md  <- draft (living training plan)
-~/cowork/Projects/adaptive-training-coach/coaching-decisions.md  <- decisions (coaching rationale)
+session-log.md         <- Tier 1: rolling session context
+phase-trends.md        <- Tier 2: block-level trajectory
+permanent-record.md    <- Tier 3: permanent history
+user-profile.md        <- brief (onboarding profile)
+source-of-truth.md     <- canonical training values
+current-block-plan.md  <- draft (living training plan)
+coaching-decisions.md  <- decisions (coaching rationale)
 ```
 
 Create any file on first use if it does not exist.

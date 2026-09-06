@@ -13,7 +13,7 @@ Build the user's profile through a conversational interview. This is how the coa
 
 ## Detecting when to run
 
-Read `~/cowork/Projects/[coach-project-folder]/user-profile.md`:
+Read `user-profile.md`:
 
 - **File does not exist** — new user. Run full onboarding pitch, then Tier 1 interview.
 - **File exists, sections marked [pending]** — returning user with incomplete profile. Resume from highest-priority pending section. No pitch needed.

@@ -1,6 +1,6 @@
 # Training Source of Truth
 
-> **This file lives at `~/cowork/Projects/adaptive-training-coach/source-of-truth.md`**
+> **This file lives at `source-of-truth.md`**
 > Update only via `/update-source-of-truth`. Claude must not auto-update values.
 > If values conflict with conversational context, this file wins — Claude should point out the discrepancy.
 

@@ -25,7 +25,7 @@ and any physical flags. This is the primary way strength session context enters 
 
 ## Write behavior
 
-1. Read `~/cowork/Projects/adaptive-training-coach/session-log.md`
+1. Read `session-log.md`
 2. Find today's entry (if morning check-in was run, it exists)
 3. Append to the Session notes field of today's entry:
    - Session type, duration, RPE, quality, physical flags, fueling

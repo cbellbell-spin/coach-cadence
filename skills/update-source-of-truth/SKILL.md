@@ -14,7 +14,7 @@ this command.
 
 ## Behavior
 
-1. Read `~/cowork/Projects/adaptive-training-coach/source-of-truth.md`
+1. Read `source-of-truth.md`
 2. Ask Chris which section to update:
    - Current status (weight, FTP)
    - Strength loads (Session A or B)
