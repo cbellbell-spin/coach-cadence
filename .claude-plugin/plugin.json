@@ -1,6 +1,6 @@
 {
   "name": "coach-cadence",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "Coach Cadence integrating Whoop recovery data with structured cycling and strength programming. Provides daily recommendations, weekly planning, strength programming, and rolling training history.",
   "author": {
     "name": "Chris Bell"
