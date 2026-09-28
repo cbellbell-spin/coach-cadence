@@ -1,0 +1,7 @@
+{
+  "display_name": "Your name",
+  "user_id": null,
+  "routine_type_ids": {},
+  "legacy_chris_profile": false,
+  "integrations": {"whoop": false, "strava": false, "intervals": false}
+}

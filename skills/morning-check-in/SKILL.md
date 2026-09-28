@@ -9,6 +9,9 @@ description: >
 
 # Morning Check-In
 
+Before proceeding, read the plugin's `references/ATHLETE.md` and resolve this athlete's identity and workspace. Stop for setup if identity is missing. Honor their configured integrations and personal program; personal examples below apply only when present in their profile.
+
+
 Run at the start of every session. Check session-log.md before touching any external service.
 If today's Whoop pull is already cached, use the flag. Whoop and Strava are live sources;
 the session log stores only what they cannot give back.
@@ -32,6 +35,13 @@ the session log stores only what they cannot give back.
 6. Read the 4 most recent entries in `coaching-decisions.md` (if it exists) — recent coaching
    rationale. Prevents re-deriving the same reasoning the coach has already worked through.
    If the file is empty or does not exist, proceed.
+
+### Optional recovery and activity sources
+
+Skip every Whoop/Strava/intervals step below unless enabled for this athlete in
+athlete-config.json. With no wearable, ask about readiness and use their gym
+history. All cycling, event, injury, and personal-pattern checks below apply only
+when the athlete's own source of truth includes them; otherwise omit them.
 
 ### Whoop data - pull prior day, once per day only
 
@@ -90,46 +100,32 @@ separate section - weave it into the coaching response.
    - Factor in cardiac decoupling flags from intervals.icu
    - Determine training phase and event countdown
    - Identify rationalization patterns to flag proactively
-9. **Reschedule Supabase programmed workout if coaching shifts the date**
+9. **Reschedule only this athlete's selected pending workout**
 
-   Now that the session type is determined, check whether a pending programmed workout
-   of that type exists in Supabase but is scheduled for a different date within the next
-   3 days. If so, update `scheduled_for` to today before writing anything else — this
-   ensures Zone 4 of the Cadence HUD finds the right workout on first load.
-
-   Only run this check when today's coaching call is Session A, B, or C.
-
-   **Step 9a — Detect the mismatch**
+   Use the configured routine UUID, never a fuzzy session-letter match. If multiple
+   pending plans exist, ask which one to move. Only reschedule when the athlete's
+   coaching decision actually changes the date.
 
    ```sql
-   SELECT pw.id, pw.scheduled_for::text, wrt.name as workout_type
+   SELECT pw.id, pw.scheduled_for
    FROM workout.programmed_workouts pw
-   JOIN workout.workout_routine_types wrt ON pw.routine_type_id = wrt.id
-   WHERE pw.status = 'pending'
+   WHERE pw.user_id = '<user_id>'::uuid
+     AND pw.routine_type_id = '<routine_type_id>'::uuid
+     AND pw.status = 'pending'
      AND pw.scheduled_for BETWEEN CURRENT_DATE AND CURRENT_DATE + 3
-     AND wrt.name ILIKE '%<A|B|C>%'
-   ORDER BY pw.scheduled_for ASC
-   LIMIT 1;
+   ORDER BY pw.scheduled_for;
    ```
-
-   Use the session letter from the coaching call to fill `<A|B|C>`.
-
-   **Step 9b — If scheduled_for ≠ today, reschedule**
 
    ```sql
    UPDATE workout.programmed_workouts
-   SET scheduled_for = CURRENT_DATE,
-       updated_at    = now()
-   WHERE id = '<id from 9a>';
+   SET scheduled_for = CURRENT_DATE, updated_at = now()
+   WHERE user_id = '<user_id>'::uuid AND id = '<plan_id>'::uuid
+     AND status = 'pending'
+   RETURNING id, scheduled_for;
    ```
 
-   **Step 9c — Log it**
-
-   Add to today's session-log entry:
-   `programmed_workout_rescheduled: <workout_type> moved from <original_date> to today`
-
-   If no mismatch exists, skip silently. If the update fails, log
-   `reschedule_failed: <error>` and continue — do not block step 10.
+   Require one returned row before logging a successful reschedule. Otherwise
+   report failure and leave the existing plan unchanged.
 
 10. Generate recommendation in the narrative voice defined in `daily-coaching` skill
 11. Write today's entry to session-log.md:

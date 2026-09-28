@@ -9,6 +9,9 @@ description: >
 
 # Notes Manager
 
+Before proceeding, read the plugin's `references/ATHLETE.md` and resolve this athlete's identity and workspace. Stop for setup if identity is missing. Honor their configured integrations and personal program; personal examples below apply only when present in their profile.
+
+
 Manages the three-tier memory system plus the two Mann-pattern artifacts. These files are
 the plugin's persistent memory — they store what Whoop and Strava cannot give back: coaching
 decisions made, the reasoning behind them, interpretations of patterns, and permanent history

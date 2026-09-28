@@ -9,6 +9,9 @@ description: >
 
 # /update-profile
 
+Before proceeding, read the plugin's `references/ATHLETE.md` and resolve this athlete's identity and workspace. Stop for setup if identity is missing. Honor their configured integrations and personal program; personal examples below apply only when present in their profile.
+
+
 Updates `user-profile.md` with new or corrected information.
 
 ## Behavior

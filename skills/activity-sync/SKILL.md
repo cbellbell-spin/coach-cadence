@@ -9,6 +9,9 @@ description: >
 
 # Activity Sync
 
+Before proceeding, read the plugin's `references/ATHLETE.md` and resolve this athlete's identity and workspace. Stop for setup if identity is missing. Honor their configured integrations and personal program; personal examples below apply only when present in their profile.
+
+
 Governs when and how activity data is pulled from Strava and enriched via intervals.icu.
 Strava is a live data source - pull it fresh. The session log stores only what Strava cannot
 give back (qualitative notes, Coach flags, recommendation context).

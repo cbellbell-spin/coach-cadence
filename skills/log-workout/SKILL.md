@@ -9,10 +9,13 @@ description: >
 
 # Log Workout
 
+Before proceeding, read the plugin's `references/ATHLETE.md` and resolve this athlete's identity and workspace. Stop for setup if identity is missing. Honor their configured integrations and personal program; personal examples below apply only when present in their profile.
+
+
 Use this to record what Whoop and Strava don't capture - how a session felt, the loads used,
 and any physical flags. This is the primary way strength session context enters the memory system.
 
-## Prompt Chris for
+## Prompt the athlete for
 
 - Session type: Strength A / Strength B / Strength C / Indoor ride / Other
 - Duration (minutes)
@@ -53,11 +56,11 @@ If grinding reps or sciatic flags are mentioned:
 - Log it clearly in session notes
 - Add a Coach flag to the entry: "Sciatica L-side tightness during Session A - monitor.
   No grinding reps next session regardless of how it feels."
-- Remind Chris of the red flag protocol: reduce load if symptoms recur; do not push through
+- Remind the athlete of the red flag protocol: reduce load if symptoms recur; do not push through
 
 ## Tone
 
-No commentary on the quality of the session unless Chris asks. Log the facts.
+No commentary on the quality of the session unless the athlete asks. Log the facts.
 
 ---
 

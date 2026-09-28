@@ -19,7 +19,19 @@ Read `user-profile.md`:
 - **File exists, sections marked [pending]** — returning user with incomplete profile. Resume from highest-priority pending section. No pitch needed.
 - **File exists, all sections complete or declined** — skip entirely. Do not run onboarding.
 
-The project folder name may vary by user. If uncertain, check what folder the other coach files (daily-log.md, source-of-truth.md) live in and use the same one.
+Use only the session-connected folder; see `references/ATHLETE.md`. Start by copying
+`references/athlete-config.example.json` into this folder as `athlete-config.json`.
+Never overwrite an existing config. A setup operator verifies the athlete's own gym
+app account UUID and routine mapping. Until identity is configured, interview/setup
+may continue but do not query the database or recommend training.
+
+Begin with their current gym program: ask them to share exercises, sets/reps, working
+loads, training days, equipment, and what they want to improve. Preserve this as the
+baseline. Offer specific recommended changes with reasons; record accepted changes
+separately from the original program. Create this athlete's `strength-template.md`
+and fresh `source-of-truth.md` from their answers, leaving unknown values pending.
+Do not copy bundled Chris profiles or loads. Chris may explicitly opt into his legacy
+references when migrating his existing workspace. No Whoop account is required.
 
 ## Opening pitch (new users only)
 
@@ -30,13 +42,13 @@ Explain that the coach works best when it understands who the user is — their 
 1. **Full interview now** — 10–15 minutes, covers everything, coach is fully calibrated from session one
 2. **Light version now** — 5 minutes for the essentials, coach fills in the rest naturally over the next few sessions
 
-If the user declines both or wants to skip entirely: respect it, create the profile file with all sections marked [pending], and proceed to the daily check-in. The coach will surface questions naturally over time.
+If the user declines both or wants to skip entirely: respect it, create the profile file with all sections marked [pending], and continue setup; defer training recommendations until identity and essential program information are available. The coach will surface questions naturally over time.
 
 ## Tier 1 — ask in first session regardless of path chosen
 
 These are required for any useful recommendation. Ask conversationally, not as a list. Group related questions together. Do not ask more than 2–3 questions at a time before letting the user respond.
 
-1. What's your primary sport or activity?
+1. What gym program are you doing now, and what would you like to improve? Then ask about other primary activities.
 2. What other activities do you do, and how often?
 3. What's your next goal or event — and when is it?
 4. How many days per week and hours per week can you realistically train?

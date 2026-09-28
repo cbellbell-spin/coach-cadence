@@ -9,13 +9,16 @@ description: >
 
 # Update Source of Truth
 
+Before proceeding, read the plugin's `references/ATHLETE.md` and resolve this athlete's identity and workspace. Stop for setup if identity is missing. Honor their configured integrations and personal program; personal examples below apply only when present in their profile.
+
+
 The only sanctioned way to update `source-of-truth.md`. Never update this file outside of
 this command.
 
 ## Behavior
 
 1. Read `source-of-truth.md`
-2. Ask Chris which section to update:
+2. Ask the athlete which section to update:
    - Current status (weight, FTP)
    - Strength loads (Session A or B)
    - Event info (new event, new date)
@@ -31,8 +34,8 @@ this command.
 - Monthly notes are append-only - never edit or delete existing monthly entries
 - FTP changes should prompt: "Has this been tested or is this an estimate?" - record the source
 - Body weight changes: record without commentary
-- Do not infer updates from conversation - only update what Chris explicitly provides here
-- If Chris mentions a value in passing during a check-in that differs from source-of-truth.md,
+- Do not infer updates from conversation - only update what the athlete explicitly provides here
+- If the athlete mentions a value in passing during a check-in that differs from source-of-truth.md,
   flag the discrepancy and direct them to run this command. Do not update automatically.
 
 ## Permanent record - log FTP and event changes

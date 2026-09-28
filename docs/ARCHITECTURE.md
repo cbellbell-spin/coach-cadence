@@ -109,11 +109,18 @@ always re-pulled.
 - **Strava has no real backing MCP call** despite being referenced throughout the skills as if
   it were live (see above).
 
-## `workout-tracker` — no integration
+## `workout-tracker` integration
 
-The `workout-tracker` repo (SwiftUI iOS app + Supabase backend, at
-`~/projects/workout-tracker`) has **no code-level connection to Cadence** — no shared API calls,
-no shared Supabase schema, no data exchange in either direction. They are separate, parallel
-projects that happen to cover related domains (strength/cardio logging). If a Cadence ↔
-workout-tracker integration is wanted, it doesn't exist yet and would need to be designed and
-built — this doc reflects current state only.
+Cadence publishes owned plans to `workout.programmed_workouts` and
+`workout.programmed_workout_sets` through the configured Supabase connector.
+The Swift app reads those plans under the signed-in athlete's account and records
+sessions/sets back to Supabase. Completed plans link to their actual session through
+`completed_workout_session_id`. The review skills use this link, not fuzzy dates.
+
+Each connected coaching folder has `athlete-config.json` plus its own profile,
+source of truth, strength template, and notes. Read `references/ATHLETE.md` for
+identity requirements. The shared SQL connector remains privileged; query filters
+reduce mistakes but do not provide enforced separation between its operators.
+
+See README.md for two-person setup. The historical integration notes above are
+optional and must be reconciled with the athlete's configured connectors.

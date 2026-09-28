@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before calling this Whoop tool: read today's entry in session-log.md. If whoop_pulled is 'yes', do NOT proceed — use cached context instead and skip this call. Only proceed if whoop_pulled is 'no' or the field is absent from today's entry."
+            "prompt": "Read references/ATHLETE.md and the connected athlete-config.json first. Stop if identity is missing or integrations.whoop is not true. Use only this athlete's connection and workspace. Before calling this Whoop tool: read today's entry in session-log.md. If whoop_pulled is 'yes', do NOT proceed \u2014 use cached context instead and skip this call. Only proceed if whoop_pulled is 'no' or the field is absent from today's entry."
           }
         ]
       },
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before calling this Strava tool: check strava_last_pull in today's session-log.md. If it was pulled within the last 4 hours AND the user has not reported completing an activity since then, skip this call and use session log context instead."
+            "prompt": "Read references/ATHLETE.md and the connected athlete-config.json first. Stop if identity is missing or integrations.strava is not true. Use only this athlete's connection and workspace. Before calling this Strava tool: check strava_last_pull in today's session-log.md. If it was pulled within the last 4 hours AND the user has not reported completing an activity since then, skip this call and use session log context instead."
           }
         ]
       }

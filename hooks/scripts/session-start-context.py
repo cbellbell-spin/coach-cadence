@@ -1,49 +1,59 @@
 #!/usr/bin/env python3
-"""
-SessionStart command hook — opens the session with the morning check-in, but
-only inside an actual training workspace.
-
-Replaces a prompt-type SessionStart hook. SessionStart does not support
-prompt-type hooks (per https://code.claude.com/docs/en/hooks: "SessionStart
-and Setup support command and mcp_tool hooks. They don't support http,
-prompt, or agent hooks."), so the original was an invalid combination and is
-rejected by the Cowork install approval UI. Mirrors the equivalent script in
-kate-career-coach.
-
-The guard matters because this is installed as a personal (cross-project)
-plugin: "the plugin is enabled" and "this is a training session" are not the
-same thing. Without it, every unrelated Cowork session opens by trying to run
-a morning check-in.
-
-`source-of-truth.md` is the marker — the coach cannot do anything useful
-without it, so its absence means this is not a training workspace.
-
-Per the docs, plain stdout already reaches Claude for this event, so a hook
-that only loads context can print directly and exit 0 — no JSON envelope.
-"""
+"""Load only the connected athlete workspace; never fall back to personal data."""
 import json
-import os
+from pathlib import Path
 import sys
+from uuid import UUID
 
-INSTRUCTIONS = """A new training session has started. Run the morning-check-in skill before responding to the user."""
+
+def valid_identity(config):
+    if not isinstance(config, dict) or not isinstance(config.get('display_name'), str):
+        return False
+    if not config['display_name'].strip():
+        return False
+    try:
+        if UUID(config['user_id']).int == 0:
+            return False
+        routines = config.get('routine_type_ids')
+        if not isinstance(routines, dict) or not routines:
+            return False
+        for label, value in routines.items():
+            if not isinstance(label, str) or not label.strip() or UUID(value).int == 0:
+                return False
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return False
+    return True
 
 
-def main() -> int:
+def main():
     try:
         payload = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError):
-        # No parseable payload — can't determine cwd, so can't confirm this is
-        # a training workspace. Stay silent rather than risk bleed-over.
         return 0
-
-    cwd = payload.get("cwd") or os.getcwd()
-
-    if not os.path.isfile(os.path.join(cwd, "source-of-truth.md")):
+    if not isinstance(payload, dict) or not isinstance(payload.get('cwd'), str):
         return 0
-
-    print(INSTRUCTIONS)
+    workspace = Path(payload['cwd'])
+    config_path = workspace / 'athlete-config.json'
+    # Legacy marker allows existing users to migrate, but never bypasses setup.
+    if not config_path.is_file() and not (workspace / 'source-of-truth.md').is_file():
+        return 0
+    try:
+        config = json.loads(config_path.read_text())
+    except (OSError, ValueError):
+        config = None
+    if not valid_identity(config):
+        print('Training setup required. Run onboarding in the connected folder. '
+              'Read references/ATHLETE.md. Do not query Supabase or recommend '
+              'training until this athlete has a verified account UUID and routine mapping.')
+    elif any(not (workspace / name).is_file() for name in
+             ('source-of-truth.md', 'user-profile.md', 'strength-template.md')):
+        print('Run onboarding for this athlete, starting with their current gym program '
+              'and suggested changes. Never load another athlete profile as a fallback.')
+    else:
+        print('Read references/ATHLETE.md and the connected athlete-config.json, '
+              'then run morning-check-in for this athlete only.')
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())

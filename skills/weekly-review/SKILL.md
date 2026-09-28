@@ -9,6 +9,9 @@ description: >
 
 # Weekly Review
 
+Before proceeding, read the plugin's `references/ATHLETE.md` and resolve this athlete's identity and workspace. Stop for setup if identity is missing. Honor their configured integrations and personal program; personal examples below apply only when present in their profile.
+
+
 Run at the start of each week (Sunday evening or Monday morning). Generates a structured
 assessment and forward plan. Also determines whether this week represents a training block
 boundary, and if so, writes to phase-trends.md.
@@ -19,12 +22,12 @@ boundary, and if so, writes to phase-trends.md.
 2. Read `session-log.md` - recent coaching context, active flags, qualitative session notes
 3. Read `phase-trends.md` - current block context and classification
 4. Read `current-block-plan.md` (if it exists) - compare last week's execution against the plan
-5. Pull Whoop data:
+5. If enabled for this athlete, pull Whoop data:
    - `whoop_get_recovery_range` (last 7 days)
    - `whoop_get_sleep_range` (last 7 days)
    - `whoop_get_strain_range` (last 7 days)
    - `whoop_get_training_summary`
-6. Pull Strava activities (last 7 days)
+6. If enabled for this athlete, pull Strava activities (last 7 days)
 7. Pull programmed vs actual comparison from Supabase
 
 Query all programmed workouts scheduled for the past 7 days, plus any that were rescheduled
@@ -32,20 +35,15 @@ into the week (use the `programmed_workout_rescheduled` notes in session-log.md 
 these):
 
 ```sql
-SELECT pw.id,
-       pw.scheduled_for::text,
-       pw.status,
-       wrt.name as workout_type,
-       ws.date::text as logged_date,
-       ws.id as session_id
+SELECT pw.id, pw.scheduled_for::text, pw.status, wrt.name AS workout_type,
+       ws.date::text AS logged_date, ws.id AS session_id
 FROM workout.programmed_workouts pw
 JOIN workout.workout_routine_types wrt ON pw.routine_type_id = wrt.id
 LEFT JOIN workout.workout_sessions ws
-  ON ws.deleted_at IS NULL
-  AND ABS(ws.date - pw.scheduled_for) <= 3          -- fuzzy match: ±3 days
-  AND ws.workout_type ILIKE '%' || LEFT(wrt.name, 7) || '%'  -- match on type prefix
-WHERE pw.scheduled_for BETWEEN
-  date_trunc('week', CURRENT_DATE - 7) AND CURRENT_DATE
+  ON ws.id = pw.completed_workout_session_id
+  AND ws.user_id = '<user_id>'::uuid AND ws.deleted_at IS NULL
+WHERE pw.user_id = '<user_id>'::uuid
+  AND pw.scheduled_for BETWEEN date_trunc('week', CURRENT_DATE - 7) AND CURRENT_DATE
 ORDER BY pw.scheduled_for;
 ```
 
@@ -55,12 +53,12 @@ Classify each programmed workout as one of:
   (note: "Session A executed [logged_date], programmed for [scheduled_for] — coach-directed shift")
 - **Not executed** — `logged_date IS NULL` and `status = 'pending'`
   (flag: "Session A programmed for [date] — not logged. Skipped or not yet recorded?")
-- **Completed in Supabase** — `status = 'completed'` regardless of date match
+- **Completed in Supabase** — `status = 'completed'`; if no linked logged session is available, report actuals unavailable rather than inventing a match
 
 Also check session-log.md for `programmed_workout_rescheduled:` notes from this week —
 use these to distinguish a coach-directed date shift from a genuine skip.
 
-8. Ask Chris for any context not captured in data: upcoming constraints (travel, work stress),
+8. Ask the athlete for any context not captured in data: upcoming constraints (travel, work stress),
    any pain or niggles, Healthspan Age if visible in WHOOP app, how legs felt late in longer
    rides
 
@@ -68,11 +66,11 @@ use these to distinguish a coach-directed date shift from a genuine skip.
 
 ```
 **WEEK OF [DATE] - [CLASSIFICATION]**
-Event countdown: [X days to May 3]
+Goal progress: [progress toward this athlete's current goal; event countdown only if relevant]
 
-**Last week (facts from Strava + Whoop):**
+**Last week (facts from the gym app, athlete feedback, and enabled integrations):**
 - Riding: X hrs | X rides | X intensity sessions
-- Strength: X/3 sessions | [list which: A ✓ / B ✓ / C –]
+- Strength: [completed/planned sessions using this athlete's routine names]
   [note any date shifts: "Session A executed Mon, programmed for Tue — coach-directed shift"]
   [note any gaps: "Session C not logged — skipped or unrecorded?"]
 - Longest ride: X hrs
@@ -93,7 +91,7 @@ observed in the session log this week]
 **Upcoming week plan:**
 - Ride days: [X] | Intensity: [day, session type] | Long ride: [day, target duration]
 - Strength: Session A [day], Session B [day]
-- Flags: [anything to watch - fueling, sciatica risk, scheduling conflicts]
+- Flags: [constraints from this athlete's profile and scheduling conflicts]
 - Conservative tripwire: [what would trigger stepping down next week]
 ```
 
@@ -152,8 +150,7 @@ If a session shows "Not logged" but session-log has a `programmed_workout_resche
 override to "Coach shift — [date]" rather than treating it as a gap.
 
 ## Active constraints
-[List any constraints in effect this week: 48h buffer, decoupling watch, HRV tripwire,
-sciatica monitor, GLP-1 ceiling. One line each.]
+[List only constraints recorded in this athlete's own profile. One line each.]
 
 ## Conservative tripwire
 [What would trigger stepping the week down from this plan]
@@ -170,7 +167,7 @@ not a history. History is preserved in phase-trends.md and session-log.md.
 Update the Cadence HUD per the standard protocol in `notes-manager`. Update these four
 fields from the weekly assessment and current-block-plan.md just written:
 
-- **D.coachingCall** — status from today's recovery data; `session` should always be `'REST'` on weekly review day
+- **D.coachingCall** — status from available readiness data; use the session actually agreed for today, not automatic rest
 - **D.nextSession** — the first planned activity of any type in the upcoming week (strength or cycling), whichever comes first
 - **D.nextRide** — the first planned cycling session in the upcoming week (may be later than nextSession if nextSession is a strength day)
 - **D.weekPlan** — the week schedule and goals from the new current-block-plan.md (full day-by-day table and constraints)
@@ -188,7 +185,7 @@ A block boundary has occurred when ANY of the following is true:
 - The event has completed
 - A fitness test was run this week
 - A significant shift in training phase is starting (entering taper, starting a new build)
-- Chris explicitly signals a phase transition
+- the athlete explicitly signals a phase transition
 
 If this is NOT a block boundary, stop here. No write to phase-trends.md.
 
@@ -204,7 +201,7 @@ The entry captures:
 - Flags still active that carry into the next block
 - What the next block starts with
 
-After writing, confirm to Chris: "I've written a block summary to phase-trends.md. The
+After writing, confirm to the athlete: "I've written a block summary to phase-trends.md. The
 session log from this block can be trimmed - want me to do that now, or leave it a bit
 longer?"
 

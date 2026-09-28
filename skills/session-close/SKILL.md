@@ -9,6 +9,9 @@ description: >
 
 # Session Close
 
+Before proceeding, read the plugin's `references/ATHLETE.md` and resolve this athlete's identity and workspace. Stop for setup if identity is missing. Honor their configured integrations and personal program; personal examples below apply only when present in their profile.
+
+
 Captures the coaching rationale from this session into coaching-decisions.md. Runs
 after the coaching call has been delivered and any post-session notes have been provided.
 
@@ -40,7 +43,7 @@ unless something about the reasoning was notable.
 
 ### Step 2 — Propose entries
 
-Present proposed entries to Chris before writing. Format each as:
+Present proposed entries to the athlete before writing. Format each as:
 
 ```
 [YYYY-MM-DD] — [one-line call summary]
@@ -79,7 +82,7 @@ If not confirmed: leave as-is and note in session summary.
 
 ### Step 5 — Session summary
 
-Confirm to Chris:
+Confirm to the athlete:
 - How many entries were written to coaching-decisions.md
 - Whether any entries were pruned
 - One-line reminder: "coaching-decisions.md = coaching logic. session-log.md = what happened."

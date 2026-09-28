@@ -1,162 +1,95 @@
 ---
 name: program-workout
-description: >
-  Program the next strength workout for Chris by reading recent history from Supabase,
-  selecting exercises from the slot options, and writing a structured programmed workout
-  to the Supabase database. Trigger phrases: "program my next workout",
-  "what should I do next session", "plan my next strength session", "program the workout".
+description: Program the current athlete's next gym session from their own program and history and publish it to the gym app.
 ---
 
 # Program Workout
 
-Write a programmed workout to Supabase `workout.programmed_workouts` and
-`workout.programmed_workout_sets` for the user's next strength session.
+Read `references/ATHLETE.md` and load `training-knowledge`. Stop if athlete identity,
+routine mapping, or their current strength program is missing. Ask which of their
+configured sessions to program and its scheduled date; do not assume A/B/C.
+Validate `<user_id>` and `<routine_type_id>` from athlete-config.json as UUIDs.
+Confirm the selected routine is assigned to them:
 
-## Prerequisite
-
-Load `training-knowledge` skill first — it contains the strength template and
-source-of-truth values needed for load selection.
-
-## Inputs
-
-You need to know the next workout type. Ask Chris directly:
-"What workout are you programming — Session A (lower body), Session B (upper body),
-or Session C (lower accessory)?"
-
-Until Chris answers, output nothing.
-
-## Data gathering
-
-### Step 1 — Pull recent workout history from Supabase
-
-Use the `execute_sql` tool with this query:
-
+```sql
+SELECT ur.routine_type_id, ur.name
+FROM workout.user_routines ur
+WHERE ur.user_id = '<user_id>'::uuid
+  AND ur.routine_type_id = '<routine_type_id>'::uuid AND ur.is_active = true;
 ```
-SELECT
-  workout_type,
-  exercise_name,
-  variant,
-  set_number,
-  weight_lbs,
-  reps,
-  notes,
-  date
+
+If no assignment exists, stop for routine setup. Never reuse someone else's routine
+as a shortcut. Shared catalog routines can be assigned independently through user_routines.
+
+## Recent history
+
+```sql
+SELECT exercise_name, variant, set_number, weight_lbs, reps, duration_secs, notes, date
 FROM workout.workout_sets
-WHERE workout_type = '<workout_type>'
-  AND date >= NOW() - INTERVAL '30 days'
-ORDER BY date DESC, set_number ASC
+WHERE user_id = '<user_id>'::uuid
+  AND routine_type_id = '<routine_type_id>'::uuid
+  AND deleted_at IS NULL AND date >= CURRENT_DATE - 30
+ORDER BY date DESC, set_number ASC;
 ```
 
-Replace `<workout_type>` with the correct value for each session:
-- Session A: `A (Lower Body)`
-- Session B: `B (Upper Body)`
-- Session C: `C (Lower Accessory)`
+Use the athlete's existing program as the baseline. Recommend changes with reasons
+and adopt accepted changes. Never derive their starting load from another athlete.
+Ask for an unknown starting load; retain bodyweight, timed holds, and per-side work
+accurately. Finish with manageable effort according to their program and constraints.
 
-### Step 2 — Select exercise per slot
+## Publish atomically
 
-From the strength-template.md and source-of-truth.md:
+Use one `execute_sql` statement, not separate parent/child calls. Generate a new plan
+UUID once and retain it across uncertain retries. Before retrying after a timeout,
+read back that ID with the athlete filter; do not generate duplicate plans.
+The following is a template: expand the VALUES list to include every programmed
+movement. Validate a nonempty list, positive sets/reps/durations, nonnegative loads,
+and app sections (`main`, `trunk`, `durability`) before executing. Include any
+warm-up movements at the start of `main`, with clear coaching notes.
+Timed work sets target_reps to NULL and target_duration_secs to seconds; rep work
+sets target_duration_secs to NULL. is_per_side records unilateral instructions.
+The app migration adding those optional columns must be installed first.
 
-**Session A (lower body) slots:**
-- Main: Step-up, RDL, Leg Press, Glute Bridge, Leg Curl, Calf Raise
-- Trunk: Dead bug or Standing Pallof press, Side plank
-- Durability: Step-downs slow eccentric, Half-kneeling Pallof press, Tibialis Raise
-
-**Session B (upper body) slots:**
-- Main: Push (DB bench or push-ups), Pull (row or lat pulldown), Overhead press
-- Accessory: Face pulls or band pull-aparts
-- Trunk: Anti-rotation or carry
-
-### Step 3 — Set target weight/reps/sets per movement
-
-Use recent history as the baseline. Adjust conservatively:
-- If recent sessions show consistent reps with a given load → hold or add 2.5–5 lbs
-- If there are notes about grinding or fatigue → reduce or hold
-- No PR chasing; finish all sets with 1–2 reps in reserve
-
-### Step 4 — Write coach notes per movement
-
-Write 1–2 sentences per exercise noting any adjustments, cues, or things to watch.
-Examples:
-- "Slower eccentric on the descent — back felt good last session"
-- "Push through heels, not toes — sciatica watch"
-- "Hold at top for 2 seconds, no bounce"
-
-## Writing to Supabase
-
-### Step 1 — Insert programmed_workout
-
-Use `execute_sql` with this query:
-
-```
-INSERT INTO workout.programmed_workouts
-  (status, coach_notes, programmed_at, scheduled_for, routine_type_id, user_id)
-VALUES
-  ('pending', '<overall coach notes>', NOW(), '<scheduled_for_date>',
-   '<routine_type_id>', 'd11e8eea-7aab-4d6c-85ad-0079243bdbca')
-RETURNING id
+```sql
+WITH plan AS (
+  INSERT INTO workout.programmed_workouts
+    (id, status, coach_notes, programmed_at, scheduled_for, routine_type_id, user_id)
+  SELECT '<plan_id>'::uuid, 'pending', '<overall_notes>', NOW(), '<date>'::date,
+         ur.routine_type_id, ur.user_id
+  FROM workout.user_routines ur
+  WHERE ur.user_id = '<user_id>'::uuid
+    AND ur.routine_type_id = '<routine_type_id>'::uuid AND ur.is_active = true
+  RETURNING id
+), movements AS (
+  INSERT INTO workout.programmed_workout_sets
+    (programmed_workout_id, slot_label, position, exercise_name, selected_variant,
+     target_sets, target_reps, target_weight_lbs, target_duration_secs, is_per_side, coach_notes)
+  SELECT plan.id, v.slot_label, v.position, v.exercise_name, v.selected_variant,
+         v.target_sets, v.target_reps, v.target_weight_lbs, v.target_duration_secs,
+         v.is_per_side, v.coach_notes
+  FROM plan CROSS JOIN (VALUES
+    ('<section>'::text, <position>::int, '<exercise>'::text, '<variant>'::text,
+     <sets>::int, <reps_or_null>::int, <weight_or_null>::numeric,
+     <seconds_or_null>::int, <true_or_false>::boolean, '<notes>'::text)
+  ) AS v(slot_label, position, exercise_name, selected_variant, target_sets,
+         target_reps, target_weight_lbs, target_duration_secs, is_per_side, coach_notes)
+  RETURNING programmed_workout_id
+)
+SELECT programmed_workout_id, COUNT(*) AS movement_count
+FROM movements GROUP BY programmed_workout_id;
 ```
 
-`scheduled_for` is the date the session is planned (YYYY-MM-DD).
+Require the returned count to equal the planned movement count. Read back before
+claiming the app is ready:
 
-`routine_type_id` values:
-- Session A: `11111111-1111-1111-1111-111111111111`
-- Session B: `22222222-2222-2222-2222-222222222222`
-- Session C: `44444444-4444-4444-4444-444444444444`
-
-`user_id` is always `d11e8eea-7aab-4d6c-85ad-0079243bdbca`.
-
-Capture the returned `id` (UUID) — use it in step 2.
-
-### Step 2 — Insert programmed_workout_sets
-
-For each movement, use `execute_sql` with this query:
-
-```
-INSERT INTO workout.programmed_workout_sets
-  (programmed_workout_id, slot_label, position, exercise_name, selected_variant,
-   target_sets, target_reps, target_weight_lbs, coach_notes)
-VALUES
-  ('<programmed_workout_id>', '<slot_label>', <position>, '<exercise_name>',
-   '<variant>', <target_sets>, <target_reps>, <target_weight_lbs>, '<coach_notes>')
+```sql
+SELECT pw.id, pw.scheduled_for, ps.*
+FROM workout.programmed_workouts pw
+JOIN workout.programmed_workout_sets ps ON ps.programmed_workout_id = pw.id
+WHERE pw.user_id = '<user_id>'::uuid AND pw.id = '<plan_id>'::uuid
+ORDER BY ps.slot_label, ps.position;
 ```
 
-Use `mainExercises` for main slot, `trunkExercises` for trunk, `durabilityExercises` for durability.
-Position: 1, 2, 3 within each slot (display order).
-
-Repeat for all movements in the session.
-
-## Output — Confirmation to Chris
-
-After writing to Supabase, write a summary to the user in the narrative coaching voice:
-
-```
-**Programmed — [Session A / Session B / Session C]**
-[Date programmed]
-
-| Movement | Target |
-|-----------|--------|
-| Exercise 1 | 3×8 @ 185 lbs |
-| ...
-
-Coach notes:
-- Exercise 1: [note]
-- Exercise 2: [note]
-```
-
-Then confirm: "Your [Session A/B/C] workout has been programmed.
-It's loaded in the app — you'll see it when you start the session."
-
----
-
-## Update the Cadence HUD
-
-After writing to Supabase, update the Cadence HUD per the standard protocol in `notes-manager`.
-
-Zone 6 fetches live from Supabase on reload — no data injection is needed. To trigger an
-immediate reload of Zone 6, read the artifact HTML (get path from `list_artifacts`), write
-it unchanged to a temp file, then call `update_artifact`:
-
-**update_summary:** `'Zone 6 refresh: <Session type> programmed for <date>'`
-
-If the artifact update fails, Zone 6 will update on the next manual artifact reload. Do not
-block the rest of the session.
+Summarize the session, date, movement targets, and coach notes. On errors, explain
+that publishing is incomplete; never claim it is loaded. Refresh only this athlete's
+explicitly associated HUD if available; absence of a HUD does not block programming.

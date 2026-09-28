@@ -1,3 +1,6 @@
 .DS_Store
 *.bak
 *.zip
+
+# Local verification artifacts
+__pycache__/
