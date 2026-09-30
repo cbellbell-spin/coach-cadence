@@ -28,7 +28,8 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(self.run_hook({}), '')
 
     def test_legacy_marker_requires_setup(self):
-        self.assertIn('Do not query Supabase', self.run_hook({'source-of-truth.md': ''}))
+        self.assertIn('Only get_athlete_context is allowed',
+                      self.run_hook({'source-of-truth.md': ''}))
 
     def test_example_bootstraps_setup_without_source_of_truth(self):
         self.assertIn('Training setup required', self.run_hook({
@@ -58,19 +59,14 @@ class WorkspaceTests(unittest.TestCase):
             self.assertNotIn('d11e8eea-7aab-4d6c-85ad-0079243bdbca', path.read_text())
             self.assertIn('ATHLETE.md', path.read_text(), str(path))
 
-    def test_coach_queries_retain_ownership(self):
+    def test_coach_uses_named_tools_without_user_id_arguments(self):
         import re
         for name in ('program-workout', 'review-program', 'morning-check-in', 'weekly-review'):
             text = (ROOT / 'skills' / name / 'SKILL.md').read_text()
-            for query in re.findall(r'```sql\n(.*?)```', text, re.S):
-                self.assertIn("'<user_id>'::uuid", query, query)
-        weekly = (ROOT / 'skills/weekly-review/SKILL.md').read_text()
-        self.assertIn('ws.id = pw.completed_workout_session_id', weekly)
-        self.assertNotIn('ABS(ws.date - pw.scheduled_for)', weekly)
-        program = (ROOT / 'skills/program-workout/SKILL.md').read_text()
-        self.assertIn('WITH plan AS', program)
-        self.assertIn('target_duration_secs', program)
-        self.assertIn('is_per_side', program)
+            self.assertNotIn('```sql', text)
+            self.assertNotIn('execute_sql', text)
+            for block in re.findall(r'```json\n(.*?)```', text, re.S):
+                self.assertNotIn('"user_id"', block)
 
 
 if __name__ == '__main__':

@@ -13,7 +13,7 @@ repo — not an aspirational design.
 | intervals.icu | Direct REST API (no MCP) | Working, browser-first | HR/power zones, cardiac decoupling, NP/IF/TSS |
 | Cowork artifact (`cadence-hud`) | `mcp__cowork__*` tools | Working | Live HUD showing today's session state |
 | Local project files | Filesystem | Working | All persistent memory (7 files, no database) |
-| `workout-tracker` (iOS/Supabase repo) | — | **No integration exists** | N/A |
+| Workout Tracker | Authenticated remote MCP connector | Working contract | Routines, history, programmed workouts, completed actuals |
 
 ## Whoop
 
@@ -111,16 +111,29 @@ always re-pulled.
 
 ## `workout-tracker` integration
 
-Cadence publishes owned plans to `workout.programmed_workouts` and
-`workout.programmed_workout_sets` through the configured Supabase connector.
-The Swift app reads those plans under the signed-in athlete's account and records
-sessions/sets back to Supabase. Completed plans link to their actual session through
-`completed_workout_session_id`. The review skills use this link, not fuzzy dates.
+Cadence reaches Workout Tracker only through an authenticated remote MCP connector.
+The athlete signs in with the same account used by the app. The server derives the
+account UUID from the OAuth token, runs under that user identity, and relies on
+Supabase Row Level Security. No tool accepts `user_id`, arbitrary SQL, table names,
+or filters outside its declared contract.
+
+The connector exposes six operations: `get_athlete_context`, `get_workout_history`,
+`publish_workout`, `list_programmed_workouts`, `get_programmed_workout`, and
+`reschedule_programmed_workout`. Every response carries `athlete_id`; the plugin
+checks it against the workspace binding before using the data. Inaccessible IDs are
+reported as `not_found` without revealing whether another account owns them.
+
+`publish_workout` verifies an active routine assignment and inserts the plan and all
+movements in one transaction. Its client-generated request UUID is idempotent across
+timeouts and retries. The native app reads the plan under the same athlete account
+and records sessions/sets back to Supabase. Completed plans link to their actual
+session through `completed_workout_session_id`; review uses that link rather than
+fuzzy dates.
 
 Each connected coaching folder has `athlete-config.json` plus its own profile,
 source of truth, strength template, and notes. Read `references/ATHLETE.md` for
-identity requirements. The shared SQL connector remains privileged; query filters
-reduce mistakes but do not provide enforced separation between its operators.
+identity requirements. Credentials remain in Cowork's connector store and never in
+the workspace. A generic Supabase connector or `execute_sql` is not supported.
 
 See README.md for two-person setup. The historical integration notes above are
 optional and must be reconciled with the athlete's configured connectors.

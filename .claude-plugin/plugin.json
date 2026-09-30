@@ -1,6 +1,6 @@
 {
   "name": "coach-cadence",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Personal gym coaching and workout programming with a separate profile and workout history for each athlete. Optional cycling and recovery integrations.",
   "author": {
     "name": "Chris Bell"

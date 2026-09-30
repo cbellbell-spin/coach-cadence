@@ -43,8 +43,9 @@ def main():
         config = None
     if not valid_identity(config):
         print('Training setup required. Run onboarding in the connected folder. '
-              'Read references/ATHLETE.md. Do not query Supabase or recommend '
-              'training until this athlete has a verified account UUID and routine mapping.')
+              'Read references/ATHLETE.md. Only get_athlete_context is allowed until '
+              'this athlete has a verified account UUID and routine mapping; do not '
+              'recommend training yet.')
     elif any(not (workspace / name).is_file() for name in
              ('source-of-truth.md', 'user-profile.md', 'strength-template.md')):
         print('Run onboarding for this athlete, starting with their current gym program '

@@ -106,26 +106,21 @@ separate section - weave it into the coaching response.
    pending plans exist, ask which one to move. Only reschedule when the athlete's
    coaching decision actually changes the date.
 
-   ```sql
-   SELECT pw.id, pw.scheduled_for
-   FROM workout.programmed_workouts pw
-   WHERE pw.user_id = '<user_id>'::uuid
-     AND pw.routine_type_id = '<routine_type_id>'::uuid
-     AND pw.status = 'pending'
-     AND pw.scheduled_for BETWEEN CURRENT_DATE AND CURRENT_DATE + 3
-   ORDER BY pw.scheduled_for;
+   Call `list_programmed_workouts` with the routine UUID, pending status, a
+   `scheduled_from` of today, and a `scheduled_to` three days from today. Require
+   the returned `athlete_id` to match the workspace. If multiple plans are returned,
+   ask which one to move.
+
+   Call `reschedule_programmed_workout` with the selected owned plan:
+
+   ```json
+   {"workout_id":"<workout_id>","scheduled_for":"<YYYY-MM-DD>"}
    ```
 
-   ```sql
-   UPDATE workout.programmed_workouts
-   SET scheduled_for = CURRENT_DATE, updated_at = now()
-   WHERE user_id = '<user_id>'::uuid AND id = '<plan_id>'::uuid
-     AND status = 'pending'
-   RETURNING id, scheduled_for;
-   ```
-
-   Require one returned row before logging a successful reschedule. Otherwise
-   report failure and leave the existing plan unchanged.
+   Require a matching `athlete_id`, the selected workout ID, pending status, and
+   requested date before logging a successful reschedule. Otherwise report failure
+   and leave the existing plan unchanged. A `not_pending` error means the plan has
+   already changed and must not be retried blindly.
 
 10. Generate recommendation in the narrative voice defined in `daily-coaching` skill
 11. Write today's entry to session-log.md:

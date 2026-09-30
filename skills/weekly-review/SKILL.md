@@ -28,24 +28,14 @@ boundary, and if so, writes to phase-trends.md.
    - `whoop_get_strain_range` (last 7 days)
    - `whoop_get_training_summary`
 6. If enabled for this athlete, pull Strava activities (last 7 days)
-7. Pull programmed vs actual comparison from Supabase
+7. Pull programmed vs actual comparison from Workout Tracker
 
-Query all programmed workouts scheduled for the past 7 days, plus any that were rescheduled
-into the week (use the `programmed_workout_rescheduled` notes in session-log.md to identify
-these):
-
-```sql
-SELECT pw.id, pw.scheduled_for::text, pw.status, wrt.name AS workout_type,
-       ws.date::text AS logged_date, ws.id AS session_id
-FROM workout.programmed_workouts pw
-JOIN workout.workout_routine_types wrt ON pw.routine_type_id = wrt.id
-LEFT JOIN workout.workout_sessions ws
-  ON ws.id = pw.completed_workout_session_id
-  AND ws.user_id = '<user_id>'::uuid AND ws.deleted_at IS NULL
-WHERE pw.user_id = '<user_id>'::uuid
-  AND pw.scheduled_for BETWEEN date_trunc('week', CURRENT_DATE - 7) AND CURRENT_DATE
-ORDER BY pw.scheduled_for;
-```
+Call `list_programmed_workouts` with `scheduled_from` set to the Monday of the
+previous week, `scheduled_to` set to today, and `limit` 50. Require the returned
+`athlete_id` to match the workspace. The connector returns each workout's routine
+name, status, scheduled date, linked session ID, and logged date. Include any workout
+rescheduled into the week; use `programmed_workout_rescheduled` notes in session-log.md
+to interpret coach-directed shifts.
 
 Classify each programmed workout as one of:
 - **Executed on schedule** — `logged_date = scheduled_for`
@@ -53,7 +43,7 @@ Classify each programmed workout as one of:
   (note: "Session A executed [logged_date], programmed for [scheduled_for] — coach-directed shift")
 - **Not executed** — `logged_date IS NULL` and `status = 'pending'`
   (flag: "Session A programmed for [date] — not logged. Skipped or not yet recorded?")
-- **Completed in Supabase** — `status = 'completed'`; if no linked logged session is available, report actuals unavailable rather than inventing a match
+- **Completed in Workout Tracker** — `status = 'completed'`; if no linked logged session is available, report actuals unavailable rather than inventing a match
 
 Also check session-log.md for `programmed_workout_rescheduled:` notes from this week —
 use these to distinguish a coach-directed date shift from a genuine skip.
